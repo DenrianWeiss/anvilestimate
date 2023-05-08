@@ -17,8 +17,8 @@ import (
 type SimulationRequest struct {
 	From        string   `json:"from" binding:"required"`
 	To          string   `json:"to" binding:"required"`
-	Amount      string   `json:"amount" binding:"required"`
-	Data        string   `json:"data" binding:"required"`
+	Amount      string   `json:"amount"`
+	Data        string   `json:"data"`
 	TokenChange []string `json:"token_change" binding:"required"`
 }
 
@@ -26,7 +26,7 @@ type sendPayload struct {
 	From  string `json:"from"`
 	To    string `json:"to"`
 	Value string `json:"value,omitempty"`
-	Data  string `json:"data"`
+	Data  string `json:"data,omitempty"`
 }
 
 type SendTransactionRequest struct {
@@ -40,6 +40,10 @@ type SendTransactionResp struct {
 	Id      string `json:"id"`
 	Jsonrpc string `json:"jsonrpc"`
 	Result  string `json:"result"`
+	Error   struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	} `json:"error"`
 }
 
 func NewSendTxRequest(from, to, value, data string) SendTransactionRequest {
@@ -59,6 +63,7 @@ func NewSendTxRequest(from, to, value, data string) SendTransactionRequest {
 type SimulationResponse struct {
 	TokenChange map[string]string `json:"token_change"`
 	Status      string
+	Reason      string
 }
 
 func HandleSimulationRequest(ctx *gin.Context) {
@@ -73,12 +78,13 @@ func HandleSimulationRequest(ctx *gin.Context) {
 	}
 	// Spin up a simulation environment
 	entry := NewEntry()
-	AsyncSimulation(entry, request)
 
 	cache.SetRespCache(entry, SimulationResponse{
 		TokenChange: nil,
 		Status:      "pending",
 	})
+
+	go AsyncSimulation(entry, request)
 
 	ctx.JSON(200, gin.H{
 		"message": "ok",
@@ -119,7 +125,7 @@ func AsyncSimulation(entry string, req SimulationRequest) {
 	// Send Transaction
 	payload := NewSendTxRequest(req.From, req.To, req.Amount, req.Data)
 	payloadB, _ := json.Marshal(&payload)
-	post, err := http.Post(fmt.Sprintf("http://192.168.1.102:%d", port), "application/json", bytes.NewReader(payloadB))
+	post, err := http.Post(fmt.Sprintf("http://127.0.0.1:%d", port), "application/json", bytes.NewReader(payloadB))
 	if err != nil {
 		return // todo handle error
 	}
@@ -127,14 +133,24 @@ func AsyncSimulation(entry string, req SimulationRequest) {
 	resp := SendTransactionResp{}
 	err = json.NewDecoder(post.Body).Decode(&resp)
 	if err != nil {
+		cache.SetRespCache(entry, SimulationResponse{
+			TokenChange: nil,
+			Status:      "err",
+			Reason:      err.Error(),
+		})
 		return
 	}
 	txId := resp.Result
 	if txId == "" {
-		return // todo handle error
+		cache.SetRespCache(entry, SimulationResponse{
+			TokenChange: nil,
+			Status:      "err",
+			Reason:      "failed to send tx",
+		})
+		return
 	}
 	// Wait for it to be mined
-	rpc.WaitMined(port, txId) // todo fill hash
+	rpc.WaitMined(port, txId)
 
 	// Record balance
 	balanceNew := make(map[string]*big.Int)

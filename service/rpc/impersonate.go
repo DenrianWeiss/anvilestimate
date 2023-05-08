@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -23,5 +24,8 @@ func Impersonate(port int, account string) {
 	}
 	reqB, _ := json.Marshal(&req)
 	reqI := bytes.NewReader(reqB)
-	http.Post(fmt.Sprintf("http://%s:%d", "127.0.0.1", port), "application/json", reqI)
+	_, err := http.Post(fmt.Sprintf("http://%s:%d", "127.0.0.1", port), "application/json", reqI)
+	if err != nil {
+		log.Printf("error: %v", err)
+	}
 }

@@ -76,9 +76,11 @@ func TimedDeletion(pid int, t time.Duration) {
 
 func WaitUntilStarted(pid int, t time.Duration) {
 	for i := 0; i < int(t.Seconds()); i++ {
-		if GetPidPort(pid) != 0 {
+		if GetPidPort(pid) == 0 {
 			continue
 		}
+
+		time.Sleep(1 * time.Second)
 		// Try to get block number
 		// If block number is 0, continue
 		req := JsonRpcReq{
@@ -89,7 +91,7 @@ func WaitUntilStarted(pid int, t time.Duration) {
 		}
 		reqS, _ := json.Marshal(&req)
 		r := bytes.NewReader(reqS)
-		post, err := http.Post("http://localhost:"+strconv.Itoa(GetPidPort(pid)), "application/json", r)
+		post, err := http.Post("http://127.0.0.1:"+strconv.Itoa(GetPidPort(pid)), "application/json", r)
 		if err != nil {
 			continue
 		}
@@ -100,6 +102,5 @@ func WaitUntilStarted(pid int, t time.Duration) {
 		} else {
 			return
 		}
-		time.Sleep(1 * time.Second)
 	}
 }
