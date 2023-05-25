@@ -25,10 +25,12 @@ type SimulationRequest struct {
 }
 
 type sendPayload struct {
-	From  string `json:"from"`
-	To    string `json:"to"`
-	Value string `json:"value,omitempty"`
-	Data  string `json:"data,omitempty"`
+	From     string `json:"from"`
+	To       string `json:"to"`
+	Value    string `json:"value,omitempty"`
+	Data     string `json:"data,omitempty"`
+	GasPrice string `json:"gasPrice,omitempty"`
+	Gas      string `json:"gas,omitempty"`
 }
 
 type SendTransactionRequest struct {
@@ -48,15 +50,17 @@ type SendTransactionResp struct {
 	} `json:"error"`
 }
 
-func NewSendTxRequest(from, to, value, data string) SendTransactionRequest {
+func NewSendTxRequest(from, to, value, data, gas string) SendTransactionRequest {
 	return SendTransactionRequest{
 		Jsonrpc: "2.0",
 		Method:  "eth_sendTransaction",
 		Params: []sendPayload{{
-			From:  from,
-			To:    to,
-			Value: value,
-			Data:  data,
+			From:     from,
+			To:       to,
+			Value:    value,
+			Data:     data,
+			GasPrice: gas,
+			Gas:      "0x1e8480",
 		}},
 		Id: "1",
 	}
@@ -122,13 +126,15 @@ func AsyncSimulation(entry string, req SimulationRequest) {
 	anvil.WaitUntilStarted(fork, 10*time.Second)
 	rpc.Impersonate(port, req.From)
 	rpc.SetBalanceOf(port, req.From)
+	//rpc.SetBalanceOf(port, req.From)
 	balanceSaved := make(map[string]*big.Int)
 	// Record balance
 	for _, t := range req.TokenChange {
 		balanceSaved[t] = rpc.GetBalance(t, req.From, port)
 	}
 	// Send Transaction
-	payload := NewSendTxRequest(req.From, req.To, req.Amount, req.Data)
+	gas := rpc.GetGasPrice(port)
+	payload := NewSendTxRequest(req.From, req.To, req.Amount, req.Data, gas)
 	payloadB, _ := json.Marshal(&payload)
 	post, err := http.Post(fmt.Sprintf("http://127.0.0.1:%d", port), "application/json", bytes.NewReader(payloadB))
 	if err != nil {
