@@ -9,6 +9,7 @@ import (
 	"github.com/DenrianWeiss/anvilEstimate/service/rpc"
 	"github.com/gin-gonic/gin"
 	"github.com/goccy/go-json"
+	"log"
 	"math/big"
 	"net/http"
 	"time"
@@ -64,6 +65,7 @@ type SimulationResponse struct {
 	TokenChange map[string]string `json:"token_change"`
 	Status      string
 	Reason      string
+	Extra       string
 }
 
 func HandleSimulationRequest(ctx *gin.Context) {
@@ -111,6 +113,7 @@ func AsyncSimulation(entry string, req SimulationRequest) {
 	// Launch simulation environment
 	fork, port, err := anvil.StartFork()
 	if err != nil {
+		log.Printf("failed to start fork: %s", err.Error())
 		return
 	}
 	defer anvil.StopFork(fork)
@@ -146,6 +149,7 @@ func AsyncSimulation(entry string, req SimulationRequest) {
 			TokenChange: nil,
 			Status:      "err",
 			Reason:      "failed to send tx",
+			Extra:       fmt.Sprintf("%v", resp),
 		})
 		return
 	}

@@ -2,9 +2,11 @@ package anvil
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/DenrianWeiss/anvilEstimate/service/env"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"net/http"
 	"os"
 	"os/exec"
@@ -28,11 +30,20 @@ type JsonResp struct {
 func StartFork() (pid int, port int, err error) {
 	// Get RPC url
 	ethRpc := env.GetUpstreamRpc()
+	// Get Upstream Block Number
+	dial, err := ethclient.Dial(ethRpc)
+	if err != nil {
+		return 0, 0, err
+	}
+	number, err := dial.BlockNumber(context.Background())
+	if err != nil {
+		return 0, 0, err
+	}
 	port = GetPort()
 	if port == 0 {
 		return 0, 0, errors.New("no port available")
 	}
-	cmd := exec.Command(env.GetAnvilPath(), "--fork-url", ethRpc, "-p", strconv.Itoa(port))
+	cmd := exec.Command(env.GetAnvilPath(), "--fork-url", ethRpc, "-p", strconv.Itoa(port), "--fork-block-number", strconv.FormatUint(number-env.GetDelay(), 10))
 
 	err = cmd.Start()
 	if err != nil {

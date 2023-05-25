@@ -1,6 +1,9 @@
 package env
 
-import "os"
+import (
+	"os"
+	"strconv"
+)
 
 func GetUpstreamRpc() string {
 	env, b := os.LookupEnv("UPSTREAM_RPC")
@@ -16,4 +19,16 @@ func GetAnvilPath() string {
 		return "anvil"
 	}
 	return env
+}
+
+func GetDelay() uint64 {
+	env, b := os.LookupEnv("DELAY_BLOCK")
+	if !b {
+		return 0
+	}
+	v, err := strconv.ParseInt(env, 10, 64)
+	if err != nil {
+		return 30
+	}
+	return uint64(v)
 }
