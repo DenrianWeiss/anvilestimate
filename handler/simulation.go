@@ -121,6 +121,7 @@ func AsyncSimulation(entry string, req SimulationRequest) {
 	// Wait for it to start
 	anvil.WaitUntilStarted(fork, 10*time.Second)
 	rpc.Impersonate(port, req.From)
+	rpc.SetBalanceOf(port, req.From)
 	balanceSaved := make(map[string]*big.Int)
 	// Record balance
 	for _, t := range req.TokenChange {
