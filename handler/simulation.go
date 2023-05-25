@@ -9,6 +9,7 @@ import (
 	"github.com/DenrianWeiss/anvilEstimate/service/rpc"
 	"github.com/gin-gonic/gin"
 	"github.com/goccy/go-json"
+	"io"
 	"log"
 	"math/big"
 	"net/http"
@@ -134,7 +135,9 @@ func AsyncSimulation(entry string, req SimulationRequest) {
 	}
 	// Read post result
 	resp := SendTransactionResp{}
-	err = json.NewDecoder(post.Body).Decode(&resp)
+	respData, _ := io.ReadAll(post.Body)
+	log.Println(respData)
+	err = json.Unmarshal(respData, &resp)
 	if err != nil {
 		cache.SetRespCache(entry, SimulationResponse{
 			TokenChange: nil,
