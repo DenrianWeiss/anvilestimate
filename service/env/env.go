@@ -21,6 +21,14 @@ func GetAnvilPath() string {
 	return env
 }
 
+func GetCastPath() string {
+	env, b := os.LookupEnv("CAST_PATH")
+	if !b {
+		return "cast"
+	}
+	return env
+}
+
 func GetDelay() uint64 {
 	env, b := os.LookupEnv("DELAY_BLOCK")
 	if !b {
