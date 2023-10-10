@@ -62,3 +62,17 @@ func WaitMined(port int, hash string) {
 	}
 	log.Println("WaitMined timeout")
 }
+
+func GetGasCost(port int, hash string) *big.Int {
+	conn, _ := ethclient.Dial("http://127.0.0.1:" + strconv.Itoa(port))
+	defer conn.Close()
+	rct, err := conn.TransactionReceipt(context.Background(), common.HexToHash(hash))
+	// Calculate Gas Cost
+	if err != nil {
+		return big.NewInt(0)
+	}
+	gasUsed := rct.GasUsed
+	gasPriceInTx := rct.EffectiveGasPrice
+	gasCost := new(big.Int).Mul(big.NewInt(int64(gasUsed)), gasPriceInTx)
+	return gasCost
+}

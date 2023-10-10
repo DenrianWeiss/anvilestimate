@@ -165,6 +165,7 @@ func AsyncSimulation(entry string, req SimulationRequest) {
 	}
 	// Wait for it to be mined
 	rpc.WaitMined(port, txId)
+	gasCost := rpc.GetGasCost(port, txId)
 
 	// Record balance
 	balanceNew := make(map[string]*big.Int)
@@ -173,6 +174,10 @@ func AsyncSimulation(entry string, req SimulationRequest) {
 	}
 	// Record Balance Diff
 	balanceDiff := make(map[string]string)
+	// If there's eth in result set, add gas cost
+	if _, ok := balanceNew[rpc.ETHPlaceHolder]; ok {
+		balanceNew[rpc.ETHPlaceHolder] = new(big.Int).Add(balanceNew[rpc.ETHPlaceHolder], gasCost)
+	}
 	for s, b := range balanceSaved {
 		balanceDiff[s] = new(big.Int).Sub(balanceNew[s], b).String()
 	}

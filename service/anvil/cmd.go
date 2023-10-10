@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/DenrianWeiss/anvilEstimate/service/env"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -67,13 +68,15 @@ func StopFork(pid int) error {
 	} else {
 		err := cmd.Process.Kill()
 		if err != nil {
-			if err == os.ErrProcessDone {
+			if errors.Is(err, os.ErrProcessDone) {
+				log.Println("process already done")
 				DeleteFork(pid)
 				ReturnPort(GetPidPort(pid))
 				return nil
 			}
 			return err
 		}
+		_ = cmd.Wait()
 		DeleteFork(pid)
 		ReturnPort(GetPidPort(pid))
 		return nil
