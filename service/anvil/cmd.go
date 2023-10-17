@@ -70,15 +70,15 @@ func StopFork(pid int) error {
 		if err != nil {
 			if errors.Is(err, os.ErrProcessDone) {
 				log.Println("process already done")
-				DeleteFork(pid)
 				ReturnPort(GetPidPort(pid))
+				DeleteFork(pid)
 				return nil
 			}
 			return err
 		}
 		_ = cmd.Wait()
-		DeleteFork(pid)
 		ReturnPort(GetPidPort(pid))
+		DeleteFork(pid)
 		return nil
 	}
 }
